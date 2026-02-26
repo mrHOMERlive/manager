@@ -1,0 +1,26 @@
+ai:
+  default_text: "openai"
+  default_vision: "openai"
+  default_transcription: "openai"
+  default_tts: "openai"
+  default_embeddings: "openai"
+
+  providers:
+    openai:
+      model: "gpt-4o-mini"
+      temperature: 0.1
+    claude:
+      model: "claude-sonnet-4-20250514"
+      temperature: 0.1
+    gemini:
+      model: "gemini-2.0-flash"
+    custom:
+      model: "default"
+
+telegram:
+  chunk_size: 3500
+  audio_size_threshold_kb: 500
+
+memory:
+  embedding_dimensions: 1536
+  search_top_k: 5
