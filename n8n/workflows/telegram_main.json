@@ -1,0 +1,236 @@
+{
+  "name": "SPRUT Telegram Main",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [220, 300],
+      "webhookId": "sprut-telegram-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Security check: validate user_id against allowed list\nconst allowedIds = ($env.ALLOWED_USER_IDS || '').split(',').map(id => id.trim());\nconst userId = String($input.item.json.message.from.id);\n\nif (!allowedIds.includes(userId)) {\n  throw new Error(`Unauthorized user: ${userId}`);\n}\n\n// Extract message data for SPRUT API\nconst message = $input.item.json.message;\nconst result = {\n  user_id: message.from.id,\n  chat_id: message.chat.id,\n  message: {\n    type: 'text',\n    text: message.text || '',\n    message_id: message.message_id\n  }\n};\n\n// Detect message type\nif (message.voice) {\n  result.message.type = 'voice';\n  result.message.file_id = message.voice.file_id;\n  result.message.duration = message.voice.duration;\n} else if (message.photo) {\n  result.message.type = 'photo';\n  result.message.file_id = message.photo[message.photo.length - 1].file_id;\n  result.message.caption = message.caption || '';\n} else if (message.document) {\n  result.message.type = 'document';\n  result.message.file_id = message.document.file_id;\n  result.message.file_name = message.document.file_name;\n  result.message.mime_type = message.document.mime_type;\n}\n\nreturn result;"
+      },
+      "id": "security-check",
+      "name": "Security Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://sprut-api:8000/api/process",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $json.message, user_id: $json.user_id }) }}",
+        "options": {
+          "timeout": 120000,
+          "fullResponse": false
+        }
+      },
+      "id": "sprut-api-call",
+      "name": "SPRUT API Process",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "sprut-bearer-auth",
+          "name": "SPRUT API Bearer"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "outputIndex": 0,
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.voice_data }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputLabel": "Has Voice"
+            },
+            {
+              "outputIndex": 1,
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.voice_data }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputLabel": "Text Only"
+            }
+          ]
+        }
+      },
+      "id": "voice-check",
+      "name": "Check Voice Data",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Security Check').item.json.chat_id }}",
+        "text": "={{ $('SPRUT API Process').item.json.text }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "send-text-message",
+      "name": "Send Text Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1100, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot-cred",
+          "name": "SPRUT Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Security Check').item.json.chat_id }}",
+        "text": "={{ $('SPRUT API Process').item.json.text }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "send-text-with-voice",
+      "name": "Send Text (with Voice)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1100, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot-cred",
+          "name": "SPRUT Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAudio",
+        "chatId": "={{ $('Security Check').item.json.chat_id }}",
+        "binaryData": false,
+        "audio": "={{ $('SPRUT API Process').item.json.voice_data }}",
+        "additionalFields": {}
+      },
+      "id": "send-voice-message",
+      "name": "Send Voice Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1320, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot-cred",
+          "name": "SPRUT Telegram Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Security Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Security Check": {
+      "main": [
+        [
+          {
+            "node": "SPRUT API Process",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SPRUT API Process": {
+      "main": [
+        [
+          {
+            "node": "Check Voice Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Voice Data": {
+      "main": [
+        [
+          {
+            "node": "Send Text (with Voice)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Text Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Text (with Voice)": {
+      "main": [
+        [
+          {
+            "node": "Send Voice Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "SPRUT",
+      "id": "sprut-tag"
+    }
+  ],
+  "triggerCount": 1,
+  "pinData": {}
+}

@@ -1,0 +1,57 @@
+{
+  "name": "SPRUT Google Drive Sync",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Placeholder: Google Drive sync logic\n// This workflow will:\n// 1. Check for new/modified files in the SPRUT Google Drive folder\n// 2. Download updated files\n// 3. Send file content to SPRUT API for indexing\n// 4. Upload new documents from SPRUT to Google Drive \"Memory\" folder\n\nreturn [{ json: { status: 'placeholder', message: 'Google Drive sync not yet implemented' } }];"
+      },
+      "id": "sync-logic",
+      "name": "Sync Logic (Placeholder)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Sync Logic (Placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "SPRUT",
+      "id": "sprut-tag"
+    }
+  ],
+  "triggerCount": 1,
+  "pinData": {}
+}

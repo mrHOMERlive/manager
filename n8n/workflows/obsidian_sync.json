@@ -1,0 +1,57 @@
+{
+  "name": "SPRUT Obsidian Sync via Google Drive",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Placeholder: Obsidian vault sync via Google Drive\n// This workflow will:\n// 1. Monitor Google Drive folder linked to Obsidian vault\n// 2. Detect new thought/note Markdown files\n// 3. Sync thoughts from SPRUT DB to Obsidian vault as .md files\n// 4. Sync transcriptions formatted as Markdown to the vault\n// 5. Handle conflict resolution for bi-directional sync\n\nreturn [{ json: { status: 'placeholder', message: 'Obsidian sync not yet implemented' } }];"
+      },
+      "id": "sync-logic",
+      "name": "Obsidian Sync Logic (Placeholder)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Obsidian Sync Logic (Placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "SPRUT",
+      "id": "sprut-tag"
+    }
+  ],
+  "triggerCount": 1,
+  "pinData": {}
+}
